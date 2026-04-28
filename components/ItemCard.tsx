@@ -141,12 +141,12 @@ export default function ItemCard({ item, householdId, currentUserId, members, me
             </Text>
 
             <TextInput
-              label="Actual Price ($)"
+                  label="Actual Price (€)"
               value={actualPrice}
               onChangeText={setActualPrice}
               mode="outlined"
               keyboardType="decimal-pad"
-              left={<TextInput.Icon icon="currency-usd" />}
+                  left={<TextInput.Icon icon="currency-eur" />}
               style={styles.input}
             />
 

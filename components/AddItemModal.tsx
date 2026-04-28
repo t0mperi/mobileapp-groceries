@@ -127,12 +127,12 @@ export default function AddItemModal({
                   style={[styles.input, styles.halfInput]}
                 />
                 <TextInput
-                  label="Est. Price ($)"
+                  label="Est. Price (€)"
                   value={estimatedPrice}
                   onChangeText={setEstimatedPrice}
                   mode="outlined"
                   keyboardType="decimal-pad"
-                  left={<TextInput.Icon icon="currency-usd" />}
+                  left={<TextInput.Icon icon="currency-eur" />}
                   style={[styles.input, styles.halfInput]}
                 />
               </View>

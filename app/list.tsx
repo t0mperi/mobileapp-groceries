@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, Share } from 'react-native';
+import { View, StyleSheet, FlatList } from 'react-native';
 import {
   Text,
   FAB,
@@ -7,7 +7,6 @@ import {
   Appbar,
   Chip,
   ActivityIndicator,
-  Banner,
   Divider,
   Menu,
 } from 'react-native-paper';
@@ -17,11 +16,14 @@ import { auth } from '../lib/firebase';
 import {
   subscribeToHousehold,
   subscribeToItems,
+  subscribeToInvites,
 } from '../lib/firestore';
 import { useAuth } from '../lib/AuthContext';
 import AddItemModal from '../components/AddItemModal';
 import ItemCard from '../components/ItemCard';
-import type { Household, GroceryItem } from '../lib/types';
+import InvitesModal from '../components/InvitesModal';
+import InviteModal from '../components/InviteModal';
+import type { Household, GroceryItem, Invite } from '../lib/types';
 
 export default function ListScreen() {
   const theme = useTheme();
@@ -32,13 +34,21 @@ export default function ListScreen() {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showInviteBanner, setShowInviteBanner] = useState(false);
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [householdMenuVisible, setHouseholdMenuVisible] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
+  const [invitesModalVisible, setInvitesModalVisible] = useState(false);
 
   // Names for each household in the switcher — fetched lazily via snapshot
   const [householdNames, setHouseholdNames] = useState<Record<string, string>>({});
 
   const hid = activeHouseholdId ?? '';
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+    const unsub = subscribeToInvites(firebaseUser.uid, setPendingInvites);
+    return unsub;
+  }, [firebaseUser?.uid]);
 
   useEffect(() => {
     if (!hid) return;
@@ -73,13 +83,6 @@ export default function ListScreen() {
   const pending = items.filter((i) => !i.purchased);
   const purchased = items.filter((i) => i.purchased);
   const householdIds = userDoc?.householdIds ?? [];
-
-  const shareInviteCode = async () => {
-    if (!household) return;
-    await Share.share({
-      message: `Join our grocery list "${household.name}" on Groceries! Use invite code: ${household.inviteCode}`,
-    });
-  };
 
   if (loading || !firebaseUser) {
     return (
@@ -130,30 +133,19 @@ export default function ListScreen() {
           title={household?.name ?? 'Groceries'}
           subtitle={`${household?.members.length ?? 0} members`}
         />
-        <Appbar.Action icon="account-plus" onPress={() => setShowInviteBanner((v) => !v)} />
+        {pendingInvites.length > 0 && (
+          <Appbar.Action
+            icon="bell-badge"
+            onPress={() => setInvitesModalVisible(true)}
+          />
+        )}
+        <Appbar.Action icon="account-plus" onPress={() => setInviteModalVisible(true)} />
         <Appbar.Action icon="scale-balance" onPress={() => router.push('/costs')} />
         {householdIds.length <= 1 && (
           <Appbar.Action icon="home-plus" onPress={() => router.push('/household')} />
         )}
         <Appbar.Action icon="logout" onPress={() => signOut(auth)} />
       </Appbar.Header>
-
-      <Banner
-        visible={showInviteBanner}
-        actions={[
-          { label: 'Share Code', onPress: shareInviteCode },
-          { label: 'Close', onPress: () => setShowInviteBanner(false) },
-        ]}
-        icon="key"
-      >
-        <Text>
-          Invite code:{' '}
-          <Text style={{ fontWeight: '700', letterSpacing: 2, color: theme.colors.primary }}>
-            {household?.inviteCode}
-          </Text>
-          {'  '}Share it with friends to let them join.
-        </Text>
-      </Banner>
 
       <FlatList
         data={pending}
@@ -224,6 +216,21 @@ export default function ListScreen() {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         color="white"
         onPress={() => setAddModalVisible(true)}
+      />
+
+      <InvitesModal
+        visible={invitesModalVisible}
+        onDismiss={() => setInvitesModalVisible(false)}
+        invites={pendingInvites}
+        onResponded={() => setInvitesModalVisible(false)}
+      />
+
+      <InviteModal
+        visible={inviteModalVisible}
+        onDismiss={() => setInviteModalVisible(false)}
+        householdId={hid}
+        householdName={household?.name ?? ''}
+        inviteCode={household?.inviteCode ?? ''}
       />
 
       <AddItemModal

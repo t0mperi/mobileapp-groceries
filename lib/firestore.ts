@@ -6,6 +6,7 @@ import {
   updateDoc,
   onSnapshot,
   query,
+  where,
   orderBy,
   serverTimestamp,
   arrayUnion,
@@ -13,7 +14,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import type { Household, GroceryItem, User } from './types';
+import type { Household, GroceryItem, User, Invite } from './types';
 
 // ── Users ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,79 @@ export async function joinHouseholdByCode(
 export function subscribeToHousehold(hid: string, cb: (h: Household) => void): Unsubscribe {
   return onSnapshot(doc(db, 'households', hid), (snap) => {
     if (snap.exists()) cb(snap.data() as Household);
+  });
+}
+
+// ── Invites ───────────────────────────────────────────────────────────────────
+
+export async function sendInvite(
+  fromUid: string,
+  fromName: string,
+  householdId: string,
+  toEmail: string,
+): Promise<'sent' | 'not_found' | 'already_member' | 'already_invited'> {
+  const { getDocs } = await import('firebase/firestore');
+
+  const householdSnap = await getDoc(doc(db, 'households', householdId));
+  const householdName = householdSnap.exists() ? (householdSnap.data() as Household).name : householdId;
+
+  const userSnap = await getDocs(query(collection(db, 'users'), where('email', '==', toEmail.toLowerCase().trim())));
+  if (userSnap.empty) return 'not_found';
+
+  const toUserDoc = userSnap.docs[0].data() as User;
+  if ((toUserDoc.householdIds ?? []).includes(householdId)) return 'already_member';
+
+  const existingInvites = await getDocs(
+    query(
+      collection(db, 'invites'),
+      where('householdId', '==', householdId),
+      where('toUid', '==', toUserDoc.uid),
+      where('status', '==', 'pending'),
+    ),
+  );
+  if (!existingInvites.empty) return 'already_invited';
+
+  const ref = doc(collection(db, 'invites'));
+  await setDoc(ref, {
+    id: ref.id,
+    householdId,
+    householdName,
+    fromUid,
+    fromName,
+    toUid: toUserDoc.uid,
+    toEmail: toEmail.toLowerCase().trim(),
+    status: 'pending',
+    createdAt: Date.now(),
+  } satisfies Invite);
+
+  return 'sent';
+}
+
+export async function respondToInvite(
+  invite: Invite,
+  accept: boolean,
+  displayName: string,
+): Promise<void> {
+  const status = accept ? 'accepted' : 'declined';
+  await updateDoc(doc(db, 'invites', invite.id), { status });
+
+  if (accept) {
+    await updateDoc(doc(db, 'households', invite.householdId), {
+      members: arrayUnion(invite.toUid),
+      [`memberNames.${invite.toUid}`]: displayName,
+    });
+    await addUserHousehold(invite.toUid, invite.householdId);
+  }
+}
+
+export function subscribeToInvites(uid: string, cb: (invites: Invite[]) => void): Unsubscribe {
+  const q = query(
+    collection(db, 'invites'),
+    where('toUid', '==', uid),
+    where('status', '==', 'pending'),
+  );
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => d.data() as Invite));
   });
 }
 

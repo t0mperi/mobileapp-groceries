@@ -4,12 +4,15 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
+  getDocs,
   onSnapshot,
   query,
   where,
   orderBy,
   serverTimestamp,
   arrayUnion,
+  arrayRemove,
   Unsubscribe,
   writeBatch,
 } from 'firebase/firestore';
@@ -162,8 +165,39 @@ export async function respondToInvite(
   }
 }
 
+export async function archiveGroup(householdId: string, memberUids: string[]): Promise<void> {
+  const batch = writeBatch(db);
+
+  // Mark the group as archived (keep all data intact)
+  batch.update(doc(db, 'households', householdId), {
+    archived: true,
+    archivedAt: Date.now(),
+    members: [],
+  });
+
+  // Remove the group from every member's active list
+  for (const uid of memberUids) {
+    batch.update(doc(db, 'users', uid), { householdIds: arrayRemove(householdId) });
+  }
+
+  await batch.commit();
+}
+
+export function subscribeToArchivedGroups(
+  uid: string,
+  cb: (groups: Household[]) => void,
+): Unsubscribe {
+  const q = query(
+    collection(db, 'households'),
+    where('createdBy', '==', uid),
+    where('archived', '==', true),
+  );
+  return onSnapshot(q, (snap) => {
+    cb(snap.docs.map((d) => d.data() as Household));
+  });
+}
+
 export async function removeMember(householdId: string, uid: string): Promise<void> {
-  const { arrayRemove } = await import('firebase/firestore');
   const hSnap = await getDoc(doc(db, 'households', householdId));
   if (!hSnap.exists()) return;
 

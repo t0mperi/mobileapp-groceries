@@ -8,7 +8,6 @@ import {
   Chip,
   ActivityIndicator,
   Divider,
-  Menu,
 } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
@@ -36,13 +35,10 @@ export default function ListScreen() {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
-  const [householdMenuVisible, setHouseholdMenuVisible] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [invitesModalVisible, setInvitesModalVisible] = useState(false);
   const [manageMembersVisible, setManageMembersVisible] = useState(false);
 
-  // Names for each household in the switcher — fetched lazily via snapshot
-  const [householdNames, setHouseholdNames] = useState<Record<string, string>>({});
 
   const hid = activeHouseholdId ?? '';
 
@@ -61,30 +57,14 @@ export default function ListScreen() {
     const unsub1 = subscribeToHousehold(hid, (h) => {
       setHousehold(h);
       setLoading(false);
-      setHouseholdNames((prev) => ({ ...prev, [hid]: h.name }));
     });
     const unsub2 = subscribeToItems(hid, setItems);
     return () => { unsub1(); unsub2(); };
   }, [hid]);
 
-  // Subscribe to each household for its display name in the switcher menu.
-  // Re-runs only when the set of household IDs actually changes.
-  const householdIdsKey = (userDoc?.householdIds ?? []).join(',');
-  useEffect(() => {
-    const ids = userDoc?.householdIds ?? [];
-    if (ids.length === 0) return;
-    const unsubs = ids.map((id) =>
-      subscribeToHousehold(id, (h) =>
-        setHouseholdNames((prev) => ({ ...prev, [id]: h.name })),
-      ),
-    );
-    return () => unsubs.forEach((u) => u());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [householdIdsKey]);
 
   const pending = items.filter((i) => !i.purchased);
   const purchased = items.filter((i) => i.purchased);
-  const householdIds = userDoc?.householdIds ?? [];
 
   if (loading || !firebaseUser) {
     return (
@@ -97,39 +77,7 @@ export default function ListScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header elevated>
-        {householdIds.length > 1 ? (
-          <Menu
-            visible={householdMenuVisible}
-            onDismiss={() => setHouseholdMenuVisible(false)}
-            anchor={
-              <Appbar.Action
-                icon="home-switch"
-                onPress={() => setHouseholdMenuVisible(true)}
-              />
-            }
-          >
-            {householdIds.map((id) => (
-              <Menu.Item
-                key={id}
-                title={householdNames[id] ?? id}
-                leadingIcon={id === hid ? 'check' : 'home-outline'}
-                onPress={() => {
-                  setActiveHouseholdId(id);
-                  setHouseholdMenuVisible(false);
-                }}
-              />
-            ))}
-            <Divider />
-            <Menu.Item
-              title="Add / Join Group"
-              leadingIcon="home-plus"
-              onPress={() => {
-                setHouseholdMenuVisible(false);
-                router.push('/household');
-              }}
-            />
-          </Menu>
-        ) : null}
+        <Appbar.BackAction onPress={() => router.replace('/select')} />
 
         <Appbar.Content
           title={household?.name ?? 'Groceries'}
@@ -146,9 +94,6 @@ export default function ListScreen() {
         )}
         <Appbar.Action icon="account-plus" onPress={() => setInviteModalVisible(true)} />
         <Appbar.Action icon="scale-balance" onPress={() => router.push('/costs')} />
-        {householdIds.length <= 1 && (
-          <Appbar.Action icon="home-plus" onPress={() => router.push('/household')} />
-        )}
         <Appbar.Action icon="logout" onPress={() => signOut(auth)} />
       </Appbar.Header>
 
@@ -233,6 +178,7 @@ export default function ListScreen() {
       <ManageMembersModal
         visible={manageMembersVisible}
         onDismiss={() => setManageMembersVisible(false)}
+        onDeleted={() => { setManageMembersVisible(false); router.replace('/select'); }}
         householdId={hid}
         members={household?.members ?? []}
         memberNames={household?.memberNames ?? {}}

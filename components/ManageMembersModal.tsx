@@ -11,11 +11,12 @@ import {
   Divider,
   ActivityIndicator,
 } from 'react-native-paper';
-import { removeMember } from '../lib/firestore';
+import { removeMember, archiveGroup } from '../lib/firestore';
 
 interface Props {
   visible: boolean;
   onDismiss: () => void;
+  onDeleted: () => void;
   householdId: string;
   members: string[];
   memberNames: Record<string, string>;
@@ -25,6 +26,7 @@ interface Props {
 export default function ManageMembersModal({
   visible,
   onDismiss,
+  onDeleted,
   householdId,
   members,
   memberNames,
@@ -33,6 +35,19 @@ export default function ManageMembersModal({
   const theme = useTheme();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteGroup = async () => {
+    setDeleting(true);
+    try {
+      await archiveGroup(householdId, members);
+      onDeleted();
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const handleRemove = async (uid: string) => {
     setRemovingId(uid);
@@ -104,6 +119,49 @@ export default function ManageMembersModal({
           >
             Done
           </Button>
+
+          <Divider style={{ marginVertical: 16 }} />
+
+          {confirmDelete ? (
+            <View style={styles.deleteConfirm}>
+              <Text variant="bodyMedium" style={{ fontWeight: '600', marginBottom: 8 }}>
+                Archive this group?
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>
+                All members will lose access, but the group history and costs will be saved and visible to you.
+              </Text>
+              <View style={styles.confirmButtons}>
+                <Button
+                  mode="outlined"
+                  onPress={() => setConfirmDelete(false)}
+                  style={styles.confirmBtn}
+                  disabled={deleting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  mode="contained"
+                  onPress={handleDeleteGroup}
+                  loading={deleting}
+                  disabled={deleting}
+                  buttonColor={theme.colors.error}
+                  style={styles.confirmBtn}
+                >
+                  Archive
+                </Button>
+              </View>
+            </View>
+          ) : (
+            <Button
+              mode="outlined"
+              icon="archive"
+              textColor={theme.colors.error}
+              style={styles.deleteBtn}
+              onPress={() => setConfirmDelete(true)}
+            >
+              Archive Group
+            </Button>
+          )}
         </Surface>
       </Modal>
     </Portal>
@@ -128,4 +186,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   memberInfo: { flex: 1 },
+  deleteBtn: { borderColor: 'transparent' },
+  deleteConfirm: {},
+  confirmButtons: { flexDirection: 'row', gap: 12 },
+  confirmBtn: { flex: 1 },
 });

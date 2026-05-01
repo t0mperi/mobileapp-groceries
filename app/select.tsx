@@ -12,7 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { subscribeToHousehold } from '../lib/firestore';
+import { subscribeToHousehold, subscribeToArchivedGroups } from '../lib/firestore';
 import { useAuth } from '../lib/AuthContext';
 import type { Household } from '../lib/types';
 
@@ -23,6 +23,8 @@ export default function SelectScreen() {
 
   const householdIds = userDoc?.householdIds ?? [];
   const [households, setHouseholds] = useState<Record<string, Household>>({});
+  const [archivedGroups, setArchivedGroups] = useState<Household[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (householdIds.length === 0) return;
@@ -33,6 +35,12 @@ export default function SelectScreen() {
     );
     return () => unsubs.forEach((u) => u());
   }, [householdIds.join(',')]);
+
+  useEffect(() => {
+    if (!userDoc?.uid) return;
+    const unsub = subscribeToArchivedGroups(userDoc.uid, setArchivedGroups);
+    return unsub;
+  }, [userDoc?.uid]);
 
   const loaded = householdIds.every((id) => households[id]);
 
@@ -107,6 +115,38 @@ export default function SelectScreen() {
             >
               Add / Join Another Group
             </Button>
+
+            {archivedGroups.length > 0 && (
+              <>
+                <Divider style={{ marginVertical: 24 }} />
+                <Button
+                  mode="text"
+                  icon={showArchived ? 'chevron-up' : 'archive'}
+                  onPress={() => setShowArchived((v) => !v)}
+                  style={{ marginBottom: 12 }}
+                >
+                  Past Groups ({archivedGroups.length})
+                </Button>
+                {showArchived && archivedGroups
+                  .sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0))
+                  .map((h) => (
+                    <Surface
+                      key={h.id}
+                      style={[styles.archivedCard, { borderColor: theme.colors.outlineVariant }]}
+                      elevation={0}
+                    >
+                      <Text variant="titleSmall" style={{ fontWeight: '700', color: theme.colors.onSurfaceVariant }}>
+                        {h.name}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: 2 }}>
+                        Archived {h.archivedAt ? new Date(h.archivedAt).toLocaleDateString() : ''}
+                        {' · '}{Object.keys(h.memberNames).length} member{Object.keys(h.memberNames).length !== 1 ? 's' : ''}
+                      </Text>
+                    </Surface>
+                  ))
+                }
+              </>
+            )}
           </>
         }
       />
@@ -130,4 +170,11 @@ const styles = StyleSheet.create({
   },
   addBtn: { borderRadius: 8 },
   addBtnContent: { paddingVertical: 4 },
+  archivedCard: {
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+    opacity: 0.7,
+  },
 });

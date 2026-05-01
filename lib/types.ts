@@ -12,6 +12,8 @@ export interface Household {
   memberNames: Record<string, string>; // uid -> displayName
   inviteCode: string;
   createdBy: string;
+  archived?: boolean;
+  archivedAt?: number;
 }
 
 export interface GroceryItem {

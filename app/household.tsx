@@ -30,7 +30,7 @@ export default function HouseholdScreen() {
   const handleCreate = async () => {
     setError('');
     if (!householdName.trim()) {
-      setError('Please enter a household name.');
+      setError('Please enter a group name.');
       return;
     }
     setLoading(true);
@@ -44,7 +44,7 @@ export default function HouseholdScreen() {
       await refreshUserDoc();
       router.replace('/list');
     } catch (e) {
-      setError('Failed to create household. Please try again.');
+      setError('Failed to create group. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -64,14 +64,14 @@ export default function HouseholdScreen() {
         inviteCode.trim(),
       );
       if (!result) {
-        setError('Invite code not found or household is full (max 10 members).');
+        setError('Invite code not found or group is full (max 10 members).');
       } else {
         setActiveHouseholdId(result.id);
         await refreshUserDoc();
         router.replace('/list');
       }
     } catch (e) {
-      setError('Failed to join household. Please try again.');
+      setError('Failed to join group. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -82,10 +82,10 @@ export default function HouseholdScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
           <Text variant="headlineMedium" style={{ fontWeight: '700', color: theme.colors.primary }}>
-            {hasHouseholds ? 'Add Another Household' : 'Set Up Your Household'}
+            {hasHouseholds ? 'Add Another Group' : 'Set Up Your Group'}
           </Text>
           <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 6, textAlign: 'center' }}>
-            Create a new household or join one with an invite code
+            Create a new group or join one with an invite code
           </Text>
         </View>
 
@@ -113,12 +113,12 @@ export default function HouseholdScreen() {
         <Surface style={styles.card} elevation={2}>
           {tab === 'create' ? (
             <>
-              <Text variant="titleMedium" style={styles.sectionTitle}>Create a Household</Text>
+              <Text variant="titleMedium" style={styles.sectionTitle}>Create a Group</Text>
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>
-                Give your household a name. You'll receive an invite code to share with others.
+                Give your group a name. You'll receive an invite code to share with others.
               </Text>
               <TextInput
-                label="Household Name"
+                label="Group Name"
                 value={householdName}
                 onChangeText={setHouseholdName}
                 mode="outlined"
@@ -136,14 +136,14 @@ export default function HouseholdScreen() {
                 contentStyle={styles.buttonContent}
                 icon="home-plus"
               >
-                Create Household
+                Create Group
               </Button>
             </>
           ) : (
             <>
-              <Text variant="titleMedium" style={styles.sectionTitle}>Join a Household</Text>
+              <Text variant="titleMedium" style={styles.sectionTitle}>Join a Group</Text>
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>
-                Enter the 6-character invite code shared by a household member.
+                Enter the 6-character invite code shared by a group member.
               </Text>
               <TextInput
                 label="Invite Code"
@@ -165,7 +165,7 @@ export default function HouseholdScreen() {
                 contentStyle={styles.buttonContent}
                 icon="account-group"
               >
-                Join Household
+                Join Group
               </Button>
             </>
           )}

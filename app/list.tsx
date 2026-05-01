@@ -116,7 +116,7 @@ export default function ListScreen() {
             ))}
             <Divider />
             <Menu.Item
-              title="Add / Join Household"
+              title="Add / Join Group"
               leadingIcon="home-plus"
               onPress={() => {
                 setHouseholdMenuVisible(false);

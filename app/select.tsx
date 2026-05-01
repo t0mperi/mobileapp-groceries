@@ -52,7 +52,7 @@ export default function SelectScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header elevated>
-        <Appbar.Content title="Your Households" />
+        <Appbar.Content title="Your Groups" />
         <Appbar.Action icon="logout" onPress={() => signOut(auth)} />
       </Appbar.Header>
 
@@ -65,7 +65,7 @@ export default function SelectScreen() {
             variant="bodyMedium"
             style={{ color: theme.colors.onSurfaceVariant, marginBottom: 20 }}
           >
-            Choose a household to open, or add a new one.
+            Choose a group to open, or add a new one.
           </Text>
         }
         renderItem={({ item: id }) => {
@@ -105,7 +105,7 @@ export default function SelectScreen() {
               style={styles.addBtn}
               contentStyle={styles.addBtnContent}
             >
-              Add / Join Another Household
+              Add / Join Another Group
             </Button>
           </>
         }

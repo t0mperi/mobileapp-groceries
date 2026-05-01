@@ -162,6 +162,24 @@ export async function respondToInvite(
   }
 }
 
+export async function removeMember(householdId: string, uid: string): Promise<void> {
+  const { arrayRemove } = await import('firebase/firestore');
+  const hSnap = await getDoc(doc(db, 'households', householdId));
+  if (!hSnap.exists()) return;
+
+  const memberNames = (hSnap.data() as Household).memberNames;
+  const updatedNames = { ...memberNames };
+  delete updatedNames[uid];
+
+  await updateDoc(doc(db, 'households', householdId), {
+    members: arrayRemove(uid),
+    memberNames: updatedNames,
+  });
+  await updateDoc(doc(db, 'users', uid), {
+    householdIds: arrayRemove(householdId),
+  });
+}
+
 export function subscribeToInvites(uid: string, cb: (invites: Invite[]) => void): Unsubscribe {
   const q = query(
     collection(db, 'invites'),

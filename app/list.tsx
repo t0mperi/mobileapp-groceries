@@ -23,6 +23,7 @@ import AddItemModal from '../components/AddItemModal';
 import ItemCard from '../components/ItemCard';
 import InvitesModal from '../components/InvitesModal';
 import InviteModal from '../components/InviteModal';
+import ManageMembersModal from '../components/ManageMembersModal';
 import type { Household, GroceryItem, Invite } from '../lib/types';
 
 export default function ListScreen() {
@@ -38,6 +39,7 @@ export default function ListScreen() {
   const [householdMenuVisible, setHouseholdMenuVisible] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<Invite[]>([]);
   const [invitesModalVisible, setInvitesModalVisible] = useState(false);
+  const [manageMembersVisible, setManageMembersVisible] = useState(false);
 
   // Names for each household in the switcher — fetched lazily via snapshot
   const [householdNames, setHouseholdNames] = useState<Record<string, string>>({});
@@ -139,6 +141,9 @@ export default function ListScreen() {
             onPress={() => setInvitesModalVisible(true)}
           />
         )}
+        {household?.createdBy === firebaseUser.uid && (
+          <Appbar.Action icon="account-edit" onPress={() => setManageMembersVisible(true)} />
+        )}
         <Appbar.Action icon="account-plus" onPress={() => setInviteModalVisible(true)} />
         <Appbar.Action icon="scale-balance" onPress={() => router.push('/costs')} />
         {householdIds.length <= 1 && (
@@ -223,6 +228,15 @@ export default function ListScreen() {
         onDismiss={() => setInvitesModalVisible(false)}
         invites={pendingInvites}
         onResponded={() => setInvitesModalVisible(false)}
+      />
+
+      <ManageMembersModal
+        visible={manageMembersVisible}
+        onDismiss={() => setManageMembersVisible(false)}
+        householdId={hid}
+        members={household?.members ?? []}
+        memberNames={household?.memberNames ?? {}}
+        currentUserId={firebaseUser.uid}
       />
 
       <InviteModal

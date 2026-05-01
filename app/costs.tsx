@@ -79,7 +79,7 @@ export default function CostsScreen() {
                 <Surface key={uid} style={styles.memberRow} elevation={1}>
                   <View style={styles.memberInfo}>
                     <Text variant="bodyLarge" style={{ fontWeight: '500' }}>
-                      {household?.memberNames[uid] ?? uid}
+                      {household?.memberNames[uid] ?? 'Removed user'}
                       {uid === firebaseUser?.uid ? ' (you)' : ''}
                     </Text>
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>

@@ -42,7 +42,7 @@ export default function BalanceSummary({ rawBalances, memberNames, currentUserId
           {myDebts.map((t, i) => (
             <View key={i} style={styles.transferRow}>
               <Chip icon="arrow-right" compact style={{ backgroundColor: theme.colors.errorContainer }}>
-                {memberNames[t.to] ?? t.to}
+                {memberNames[t.to] ?? 'Removed user'}
               </Chip>
               <Text variant="titleMedium" style={{ color: theme.colors.error, fontWeight: '700' }}>
                 {formatCurrency(t.amount)}
@@ -60,7 +60,7 @@ export default function BalanceSummary({ rawBalances, memberNames, currentUserId
           {owedToMe.map((t, i) => (
             <View key={i} style={styles.transferRow}>
               <Chip icon="arrow-left" compact style={{ backgroundColor: theme.colors.secondaryContainer }}>
-                {memberNames[t.from] ?? t.from}
+                {memberNames[t.from] ?? 'Removed user'}
               </Chip>
               <Text variant="titleMedium" style={{ color: theme.colors.primary, fontWeight: '700' }}>
                 {formatCurrency(t.amount)}
@@ -79,9 +79,9 @@ export default function BalanceSummary({ rawBalances, memberNames, currentUserId
           {otherTransfers.map((t, i) => (
             <Surface key={i} style={styles.otherRow} elevation={1}>
               <Text variant="bodyMedium">
-                <Text style={{ fontWeight: '600' }}>{memberNames[t.from] ?? t.from}</Text>
+                <Text style={{ fontWeight: '600' }}>{memberNames[t.from] ?? 'Removed user'}</Text>
                 {' → '}
-                <Text style={{ fontWeight: '600' }}>{memberNames[t.to] ?? t.to}</Text>
+                <Text style={{ fontWeight: '600' }}>{memberNames[t.to] ?? 'Removed user'}</Text>
               </Text>
               <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
                 {formatCurrency(t.amount)}

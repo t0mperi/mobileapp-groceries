@@ -29,10 +29,27 @@ interface Props {
 export default function ItemCard({ item, householdId, currentUserId, members, memberNames }: Props) {
   const theme = useTheme();
   const [purchaseModalVisible, setPurchaseModalVisible] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [actualPrice, setActualPrice] = useState(
     item.estimatedPrice ? item.estimatedPrice.toFixed(2) : '',
   );
   const [selectedSplit, setSelectedSplit] = useState<string[]>(members);
+
+  const openForNew = () => {
+    setIsEditing(false);
+    setActualPrice(item.estimatedPrice ? item.estimatedPrice.toFixed(2) : '');
+    setSelectedSplit(members);
+    setError('');
+    setPurchaseModalVisible(true);
+  };
+
+  const openForEdit = () => {
+    setIsEditing(true);
+    setActualPrice(item.actualPrice != null ? item.actualPrice.toFixed(2) : '');
+    setSelectedSplit(item.splitBetween.length > 0 ? item.splitBetween : members);
+    setError('');
+    setPurchaseModalVisible(true);
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -81,8 +98,8 @@ export default function ItemCard({ item, householdId, currentUserId, members, me
           <View style={styles.left}>
             <Checkbox.Android
               status={item.purchased ? 'checked' : 'unchecked'}
-              onPress={() => !item.purchased && setPurchaseModalVisible(true)}
-              color={theme.colors.primary}
+              onPress={() => !item.purchased && item.addedBy === currentUserId && openForNew()}
+              color={item.addedBy === currentUserId || item.purchased ? theme.colors.primary : theme.colors.onSurfaceDisabled}
             />
           </View>
 
@@ -115,14 +132,21 @@ export default function ItemCard({ item, householdId, currentUserId, members, me
             </Text>
           </View>
 
-          {!item.purchased && (
+          {item.purchased ? (
+            <IconButton
+              icon="pencil-outline"
+              iconColor={theme.colors.onSurfaceVariant}
+              size={20}
+              onPress={openForEdit}
+            />
+          ) : item.addedBy === currentUserId ? (
             <IconButton
               icon="trash-can-outline"
               iconColor={theme.colors.error}
               size={20}
               onPress={handleDelete}
             />
-          )}
+          ) : null}
         </Card.Content>
       </Card>
 
@@ -134,7 +158,7 @@ export default function ItemCard({ item, householdId, currentUserId, members, me
         >
           <Surface style={styles.modalSurface} elevation={4}>
             <Text variant="titleMedium" style={styles.modalTitle}>
-              Mark as Purchased
+              {isEditing ? 'Edit Purchase' : 'Mark as Purchased'}
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16 }}>
               "{item.name}" — enter what you actually paid and who to split with.
@@ -178,7 +202,7 @@ export default function ItemCard({ item, householdId, currentUserId, members, me
                 disabled={loading}
                 style={styles.actionBtn}
               >
-                Confirm
+                {isEditing ? 'Save' : 'Confirm'}
               </Button>
             </View>
           </Surface>
